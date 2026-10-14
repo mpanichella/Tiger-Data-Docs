@@ -161,7 +161,9 @@ off the page. Draft, run, fix.
    named on the page; statements drifted from the page (a near copy of a page block); procedures not
    covered (a `<NumberedList>` section no step touches); statements not run (a SQL or shell block no
    step executes); out of page order. The last three read the `Not scripted:` list, keyed on the
-   heading text before the first colon. It also warns when a plan asserts nothing.
+   heading text before the first colon. It also warns when a plan asserts nothing. A fenced block
+   with a line that is only a placeholder (`<function_body>;`) is a syntax synopsis, not a statement,
+   and is not checked; run the example block under it. A dollar-quoted body is one statement.
 
    A page's first plan also needs `import TestPlan from "@components/TestPlan.astro";` among its
    imports. Neither the linter nor the run builds the page, so a missing import surfaces only in the

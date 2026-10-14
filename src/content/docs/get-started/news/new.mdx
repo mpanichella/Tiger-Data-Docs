@@ -129,6 +129,29 @@ import imgBackupsExtendedRetention from "../../../../assets/images/get-started/n
 
 <div class="changelog-page-toc">
 
+## pg_textsearch 1.5.1
+
+<ChangelogEntry
+  title="pg_textsearch 1.5"
+  date="2026-10-09"
+  tags={["new-feature"]}
+>
+<h2 slot="heading" class="changelog-entry__title">pg_textsearch 1.5</h2>
+
+The latest pg_textsearch version (1.5.1) is now available on Tiger Cloud.
+New services have access. Existing services require pausing / resuming or waiting for the next maintenance event.
+
+Highlights of the 1.5 release:
+- **Boolean and phrase queries**: support for AND/OR/NOT operators and exact phrase matching for more expressive search.
+- **Faster builds and scans**: reduced index build times and lower query latency.
+- **Background compaction** (preview): index maintenance runs automatically in the background, keeping indexes compact without blocking writes. This feature is in preview.
+
+Version 1.5.1 also includes bugfixes on top of 1.5.0, resolving a storage corruption edge case and improving index handling.
+
+For details, see the [v1.5.0](https://github.com/timescale/pg_textsearch/releases/tag/v1.5.0) and [v1.5.1](https://github.com/timescale/pg_textsearch/releases/tag/v1.5.1) release notes.
+
+</ChangelogEntry>
+
 ## Iceberg destination connector: tiered data, Changelog mode, and improved observability
 
 <ChangelogEntry
@@ -153,6 +176,27 @@ The Iceberg destination connector now supports tiered data controls, Changelog m
 
 </ChangelogEntry>
 
+## Tiger CLI 0.26: service metrics, service names in commands, and safer password updates
+
+<ChangelogEntry
+  title="Tiger CLI 0.26: service metrics, service names in commands, and safer password updates"
+  date="2026-10-01"
+  tags={["new-feature", "cli-mcp"]}
+>
+<h2 slot="heading" class="changelog-entry__title">Tiger CLI 0.26: service metrics, service names in commands, and safer password updates</h2>
+
+Tiger CLI 0.26 brings service metrics to the terminal and to your agent, lets you refer to services by name, and makes password updates through Tiger MCP safer.
+
+- **Service metrics**: the new `tiger service metrics` commands query a service's time-series metrics for monitoring, debugging, and performance investigation: [`available`](/reference/tiger-cloud/tiger-cli#tiger-service-metrics-available) lists the metric series a service exposes, [`details`](/reference/tiger-cloud/tiger-cli#tiger-service-metrics-details) describes one, and [`series`](/reference/tiger-cloud/tiger-cli#tiger-service-metrics-series) fetches its data, with label filters (including negated matches such as `--filter role!=replica`), grouping, and per-bucket aggregation functions. The matching [`service_metrics_available`, `service_metrics_details`, and `service_metrics_series`](/reference/tiger-cloud/tiger-mcp#metrics-tools) MCP tools give your agent the same view; see [Available metrics](/reference/tiger-cloud/tiger-cli#available-metrics) for the full list. Metrics were previously experimental, hidden behind the `TIGER_EXPERIMENTAL` environment variable.
+- **Service names in commands**: every command that takes a service now accepts its name as well as its ID, so `tiger service stop my-api-db` just works, and shell completion offers services by name too.
+- **Fork at the current state by default**: `tiger service fork` no longer requires a timing flag; with none given it forks at the current database state. `--last-snapshot` and `--to-timestamp` still override the default.
+- **Safer password updates from agents**: the `service_update_password` MCP tool now generates a secure password itself instead of accepting one as a parameter, keeping it out of the agent's context, and updating a service tagged PROD prompts you through the MCP client to confirm first. Set `with_password: true` to get the generated password back, or set a specific one with `tiger service update-password` from the CLI.
+- **Deprecated `ai` add-on removed**: `tiger service create --addons` and the `service_create` MCP tool now accept only `time-series`.
+
+To upgrade, run `tiger upgrade` or use your package manager. For all commands and flags, see the [Tiger CLI reference](/reference/tiger-cloud/tiger-cli) and the [Tiger MCP reference](/reference/tiger-cloud/tiger-mcp).
+
+</ChangelogEntry>
+
 ## Query your data directly in the Explorer
 
 <ChangelogEntry
@@ -172,6 +216,33 @@ The previous top sections (General, Columnstore, Data tiering, Continuous aggreg
 
 See [Service explorer](/deploy/tiger-cloud/tiger-cloud-aws/service-management/service-explorer) for more.
 
+</ChangelogEntry>
+
+## TimescaleDB v2.30 now on Tiger Cloud
+
+<ChangelogEntry
+  title="TimescaleDB v2.30 now on Tiger Cloud"
+  date="2026-09-22"
+  tags={["performance"]}
+>
+<h2 slot="heading" class="changelog-entry__title">TimescaleDB v2.30 now on Tiger Cloud</h2>
+
+TimescaleDB 2.30.0 is a lighter, planner- and compression-focused release: faster planning for common "latest row" and "last N readings" queries on hypertables with many chunks, broader coverage for the Batch Sorted Merge optimization on compressed data, and a new opt-in write path for compression. TimescaleDB 2.30.0 was released on GitHub on September 8, 2026, and is available on Tiger Cloud as of September 22, 2026.
+
+### Highlighted features in TimescaleDB v2.30
+
+**Smarter query planning for latest-row queries**
+
+This release cuts planning overhead for two common query shapes on hypertables with large numbers of chunks.
+
+- **Deferred Chunk Append:** A new custom scan node improves planning performance for `ORDER BY ... LIMIT` queries on hypertables with many chunks. Instead of expanding every chunk into a plan node during planning, it defers chunk enumeration until execution time and stops as soon as the `LIMIT` is satisfied, which helps with "get the latest row" and "last N readings" queries on long-lived hypertables, where planning time previously scaled linearly with chunk count. On by default; controlled with `timescaledb.enable_deferred_chunk_append`.
+- **Segmentwise Batch Sorted Merge:** Extends the existing Batch Sorted Merge optimization to more sort patterns. Queries that sort by `segmentby` columns followed by `orderby` columns (for example `ORDER BY device, time`) can now avoid an expensive `Sort` node, even when compressed batches aren't stored in strict order. Previously this only applied when the sort order matched compressed `orderby` metadata exactly, or `segmentby` columns were fixed to constants. On by default with the existing GUC `ts_guc_enable_decompression_sorted_merge`.
+
+**Faster compression writes on the columnstore**
+
+- **Custom detoaster for compression:** TimescaleDB can now intercept large compressed columnar batches and write them using a custom TOAST writer built for bulk compressed data, instead of routing them through PostgreSQL's general-purpose TOAST machinery. This reduces overhead from extra slicing, memory mapping, and generalized locking during compression, improving write throughput and lowering CPU overhead for background columnstore policy jobs and manual `convert_to_columnstore()` calls. This is opt-in behind the GUC `use_custom_toaster`. Benchmark in staging before enabling it in production.
+
+For complete details, refer to the [TimescaleDB 2.30.0 release notes](https://github.com/timescale/timescaledb/releases/tag/2.30.0).
 </ChangelogEntry>
 
 ## Tiger CLI 0.25: clearer command names, service rename and delete from agents, and a feedback command
@@ -305,7 +376,7 @@ The billing page in Tiger Console now gives you clearer visibility into what dri
 - **Timeline view:** A new timeline shows how your usage and costs trend over the last 7 days, making it easier to spot changes and plan ahead.
 
 </ChangelogEntry>
-  
+
 ## TimescaleDB v2.29 now on Tiger Cloud
 
 <ChangelogEntry
