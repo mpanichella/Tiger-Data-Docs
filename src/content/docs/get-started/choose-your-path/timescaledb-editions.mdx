@@ -84,59 +84,59 @@ You can access a hosted version of {C.TDB_COMMUNITY} through
 | Features                                                                                                                                           | {C.TDB_APACHE} | {C.TDB_COMMUNITY} |
 | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------- |
 | **Hypertables and chunks**                                                                                                                         |
-| [CREATE TABLE](/api/latest/hypertable/create_table)                                                                 | ✅             | ✅                |
-| [create_hypertable](/api/latest/hypertable/create_hypertable)                                                       | ✅             | ✅                |
-| [show_chunks](/api/latest/hypertable/show_chunks)                                                                   | ✅             | ✅                |
-| [drop_chunks](/api/latest/hypertable/drop_chunks)                                                                   | ✅             | ✅                |
-| [split_chunk](/api/latest/hypertable/split_chunk)                                                                   | ❌             | ✅                |
-| [reorder_chunk](/api/latest/hypertable/reorder_chunk)                                                               | ❌             | ✅                |
-| [move_chunk](/api/latest/hypertable/move_chunk)                                                                     | ❌             | ✅                |
-| [add_reorder_policy](/api/latest/hypertable/add_reorder_policy)                                                     | ❌             | ✅                |
-| [attach_tablespace](/api/latest/hypertable/attach_tablespace)                                                       | ✅             | ✅                |
-| [detach_tablespace()](/api/latest/hypertable/detach_tablespace)                                                     | ✅             | ✅                |
-| [detach_tablespaces()](/api/latest/hypertable/detach_tablespaces)                                                   | ✅             | ✅                |
-| [show_tablespaces](/api/latest/hypertable/show_tablespaces)                                                         | ✅             | ✅                |
-| [set_chunk_time_interval](/api/latest/hypertable/set_chunk_time_interval)                                           | ✅             | ✅                |
-| [set_integer_now_func](/api/latest/hypertable/set_integer_now_func)                                                 | ✅             | ✅                |
-| [add_dimension()](/api/latest/hypertable/add_dimension)                                                             | ✅             | ✅                |
-| [create_index (Transaction Per Chunk)](/api/latest/hypertable/create_index)                                         | ✅             | ✅                |
-| [hypertable_size](/api/latest/hypertable/hypertable_size)                                                           | ✅             | ✅                |
-| [hypertable_detailed_size](/api/latest/hypertable/hypertable_detailed_size)                                         | ✅             | ✅                |
-| [hypertable_index_size](/api/latest/hypertable/hypertable_index_size)                                               | ✅             | ✅                |
-| [chunks_detailed_size](/api/latest/hypertable/chunks_detailed_size)                                                 | ✅             | ✅                |
-| [SkipScan](/use-timescale/latest/query-data/skipscan)                                                               | ❌             | ✅                |
+| [CREATE TABLE](/reference/timescaledb/hypertables/create_table)                                                                 | ✅             | ✅                |
+| [create_hypertable](/reference/timescaledb/hypertables)                                                       | ✅             | ✅                |
+| [show_chunks](/reference/timescaledb/hypertables/show_chunks)                                                                   | ✅             | ✅                |
+| [drop_chunks](/reference/timescaledb/hypertables/drop_chunks)                                                                   | ✅             | ✅                |
+| [split_chunk](/reference/timescaledb/hypertables/split_chunk)                                                                   | ❌             | ✅                |
+| [reorder_chunk](/reference/timescaledb/hypertables/reorder_chunk)                                                               | ❌             | ✅                |
+| [move_chunk](/reference/timescaledb/hypertables/move_chunk)                                                                     | ❌             | ✅                |
+| [add_reorder_policy](/reference/timescaledb/hypertables/add_reorder_policy)                                                     | ❌             | ✅                |
+| [attach_tablespace](/reference/timescaledb/hypertables/attach_tablespace)                                                       | ✅             | ✅                |
+| [detach_tablespace()](/reference/timescaledb/hypertables/detach_tablespace)                                                     | ✅             | ✅                |
+| [detach_tablespaces()](/reference/timescaledb/hypertables/detach_tablespaces)                                                   | ✅             | ✅                |
+| [show_tablespaces](/reference/timescaledb/hypertables/show_tablespaces)                                                         | ✅             | ✅                |
+| [set_chunk_time_interval](/reference/timescaledb/hypertables/set_chunk_time_interval)                                           | ✅             | ✅                |
+| [set_integer_now_func](/reference/timescaledb/hypertables/set_integer_now_func)                                                 | ✅             | ✅                |
+| [add_dimension()](/reference/timescaledb/hypertables/add_dimension)                                                             | ✅             | ✅                |
+| [create_index (Transaction Per Chunk)](/reference/timescaledb/hypertables/create_index)                                         | ✅             | ✅                |
+| [hypertable_size](/reference/timescaledb/hypertables/hypertable_size)                                                           | ✅             | ✅                |
+| [hypertable_detailed_size](/reference/timescaledb/hypertables/hypertable_detailed_size)                                         | ✅             | ✅                |
+| [hypertable_index_size](/reference/timescaledb/hypertables/hypertable_index_size)                                               | ✅             | ✅                |
+| [chunks_detailed_size](/reference/timescaledb/hypertables/chunks_detailed_size)                                                 | ✅             | ✅                |
+| [SkipScan](/build/performance-optimization/skipscan)                                                               | ❌             | ✅                |
 | **Hypercore**                                                                                                                                      |
-| [ALTER TABLE (Hypercore)](/api/latest/hypercore/alter_table)                                                        | ❌             | ✅                |
-| [add_columnstore_policy](/api/latest/hypercore/add_columnstore_policy)                                              | ❌             | ✅                |
-| [remove_columnstore_policy](/api/latest/hypercore/remove_columnstore_policy)                                        | ❌             | ✅                |
-| [convert_to_columnstore](/api/latest/hypercore/convert_to_columnstore)                                              | ❌             | ✅                |
-| [convert_to_rowstore](/api/latest/hypercore/convert_to_rowstore)                                                    | ❌             | ✅                |
-| [hypertable_columnstore_settings](/api/latest/hypercore/hypertable_columnstore_settings)                            | ❌             | ✅                |
-| [hypertable_columnstore_stats](/api/latest/hypercore/hypertable_columnstore_stats)                                  | ❌             | ✅                |
-| [chunk_columnstore_settings](/api/latest/hypercore/chunk_columnstore_settings)                                      | ❌             | ✅                |
-| [chunk_columnstore_stats](/api/latest/hypercore/chunk_columnstore_stats)                                            | ❌             | ✅                |
+| [ALTER TABLE (Hypercore)](/reference/timescaledb/hypercore/alter_table)                                                        | ❌             | ✅                |
+| [add_columnstore_policy](/reference/timescaledb/hypercore/add_columnstore_policy)                                              | ❌             | ✅                |
+| [remove_columnstore_policy](/reference/timescaledb/hypercore/remove_columnstore_policy)                                        | ❌             | ✅                |
+| [convert_to_columnstore](/reference/timescaledb/hypercore/convert_to_columnstore)                                              | ❌             | ✅                |
+| [convert_to_rowstore](/reference/timescaledb/hypercore/convert_to_rowstore)                                                    | ❌             | ✅                |
+| [hypertable_columnstore_settings](/reference/timescaledb/hypercore/hypertable_columnstore_settings)                            | ❌             | ✅                |
+| [hypertable_columnstore_stats](/reference/timescaledb/hypercore/hypertable_columnstore_stats)                                  | ❌             | ✅                |
+| [chunk_columnstore_settings](/reference/timescaledb/hypercore/chunk_columnstore_settings)                                      | ❌             | ✅                |
+| [chunk_columnstore_stats](/reference/timescaledb/hypercore/chunk_columnstore_stats)                                            | ❌             | ✅                |
 | **Continuous aggregates**                                                                                                                          |
-| [CREATE MATERIALIZED VIEW (Continuous Aggregate)](/api/latest/continuous-aggregates/create_materialized_view)       | ❌             | ✅                |
-| [ALTER MATERIALIZED VIEW (Continuous Aggregate)](/api/latest/continuous-aggregates/alter_materialized_view)         | ❌             | ✅                |
-| [DROP MATERIALIZED VIEW (Continuous Aggregate)](/api/latest/continuous-aggregates/drop_materialized_view)           | ❌             | ✅                |
-| [add_continuous_aggregate_policy()](/api/latest/continuous-aggregates/add_continuous_aggregate_policy)              | ❌             | ✅                |
-| [refresh_continuous_aggregate](/api/latest/continuous-aggregates/refresh_continuous_aggregate)                      | ❌             | ✅                |
-| [remove_continuous_aggregate_policy()](/api/latest/continuous-aggregates/remove_continuous_aggregate_policy)        | ❌             | ✅                |
+| [CREATE MATERIALIZED VIEW (Continuous Aggregate)](/reference/timescaledb/continuous-aggregates/create_materialized_view)       | ❌             | ✅                |
+| [ALTER MATERIALIZED VIEW (Continuous Aggregate)](/reference/timescaledb/continuous-aggregates/alter_materialized_view)         | ❌             | ✅                |
+| [DROP MATERIALIZED VIEW (Continuous Aggregate)](/reference/timescaledb/continuous-aggregates/drop_materialized_view)           | ❌             | ✅                |
+| [add_continuous_aggregate_policy()](/reference/timescaledb/continuous-aggregates/add_continuous_aggregate_policy)              | ❌             | ✅                |
+| [refresh_continuous_aggregate](/reference/timescaledb/continuous-aggregates/refresh_continuous_aggregate)                      | ❌             | ✅                |
+| [remove_continuous_aggregate_policy()](/reference/timescaledb/continuous-aggregates/remove_continuous_aggregate_policy)        | ❌             | ✅                |
 | **Data retention**                                                                                                                                 |
-| [add_retention_policy](/api/latest/data-retention/add_retention_policy)                                             | ❌             | ✅                |
-| [remove_retention_policy](/api/latest/data-retention/remove_retention_policy)                                       | ❌             | ✅                |
+| [add_retention_policy](/reference/timescaledb/data-retention/add_retention_policy)                                             | ❌             | ✅                |
+| [remove_retention_policy](/reference/timescaledb/data-retention/remove_retention_policy)                                       | ❌             | ✅                |
 | **Jobs and automation**                                                                                                                            |
-| [add_job](/api/latest/jobs-automation/add_job)                                                                      | ❌             | ✅                |
-| [alter_job](/api/latest/jobs-automation/alter_job)                                                                  | ❌             | ✅                |
-| [delete_job](/api/latest/jobs-automation/delete_job)                                                                | ❌             | ✅                |
-| [run_job](/api/latest/jobs-automation/run_job)                                                                      | ❌             | ✅                |
+| [add_job](/reference/timescaledb/jobs-automation/add_job)                                                                      | ❌             | ✅                |
+| [alter_job](/reference/timescaledb/jobs-automation/alter_job)                                                                  | ❌             | ✅                |
+| [delete_job](/reference/timescaledb/jobs-automation/delete_job)                                                                | ❌             | ✅                |
+| [run_job](/reference/timescaledb/jobs-automation/run_job)                                                                      | ❌             | ✅                |
 | **Hyperfunctions**                                                                                                                                 |
-| [approximate_row_count](/api/latest/hyperfunctions/approximate_row_count)                                           | ✅             | ✅                |
-| [first](/api/latest/hyperfunctions/first)                                                                           | ✅             | ✅                |
-| [last](/api/latest/hyperfunctions/last)                                                                             | ✅             | ✅                |
-| [histogram](/api/latest/hyperfunctions/histogram)                                                                   | ✅             | ✅                |
-| [time_bucket](/api/latest/hyperfunctions/time_bucket)                                                               | ✅             | ✅                |
-| [time_bucket_gapfill](/api/latest/hyperfunctions/gapfilling/time_bucket_gapfill)                                    | ❌             | ✅                |
+| [approximate_row_count](/reference/timescaledb/hyperfunctions/distribution-analysis/approximate_row_count)                                           | ✅             | ✅                |
+| [first](/reference/timescaledb/hyperfunctions/time-series-utilities/first)                                                                           | ✅             | ✅                |
+| [last](/reference/timescaledb/hyperfunctions/time-series-utilities/last)                                                                             | ✅             | ✅                |
+| [histogram](/reference/timescaledb/hyperfunctions/distribution-analysis/histogram)                                                                   | ✅             | ✅                |
+| [time_bucket](/reference/timescaledb/hyperfunctions/time-series-utilities/time_bucket)                                                               | ✅             | ✅                |
+| [time_bucket_gapfill](/reference/timescaledb/hyperfunctions/time_bucket_gapfill/time_bucket_gapfill)                                    | ❌             | ✅                |
 | [locf](/reference/timescaledb/hyperfunctions/time_bucket_gapfill/time_bucket_gapfill)                                               | ❌             | ✅                |
 | [interpolate](/reference/timescaledb/hyperfunctions/time_bucket_gapfill/time_bucket_gapfill)                                 | ❌             | ✅                |
 | [percentile_agg](/reference/toolkit/percentile-approximation/uddsketch)                      | ❌             | ✅                |
@@ -150,14 +150,14 @@ You can access a hosted version of {C.TDB_COMMUNITY} through
 | [num_vals](/reference/toolkit/percentile-approximation/uddsketch)                                  | ❌             | ✅                |
 | [uddsketch](/reference/toolkit/percentile-approximation/uddsketch#aggregate-and-roll-up-percentile-data-using-uddsketch)                                | ❌             | ✅                |
 | [tdigest](/reference/toolkit/percentile-approximation/tdigest)                                      | ❌             | ✅                |
-| [time_weight](/api/latest/hyperfunctions/time-weighted-calculations/time_weight)                                    | ❌             | ✅                |
+| [time_weight](/reference/toolkit/time_weight/time_weight)                                    | ❌             | ✅                |
 | [rollup](/reference/toolkit/time_weight/time_weight)                                   | ❌             | ✅                |
 | [average](/reference/toolkit/time_weight/time_weight)                                 | ❌             | ✅                |
 | **Informational Views**                                                                                                                            |
 | [timescaledb_information.chunks](/reference/timescaledb/informational-views/chunks)                          | ✅             | ✅                |
 | [timescaledb_information.continuous_aggregates](/reference/timescaledb/informational-views/continuous_aggregates) | ✅             | ✅                |
 | [timescaledb_information.dimension](/reference/timescaledb/informational-views/dimensions)  | ✅             | ✅                |
-| [timescaledb_information.hypertables](/api/latest/informational-views/hypertables)                                  | ✅             | ✅                |
+| [timescaledb_information.hypertables](/reference/timescaledb/informational-views/hypertables)                                  | ✅             | ✅                |
 | [timescaledb_information.jobs](/reference/timescaledb/informational-views/jobs)                              | ✅             | ✅                |
 | [timescaledb_information.job_stats](/reference/timescaledb/informational-views/job_stats)                    | ✅             | ✅                |
 | **Administration functions**                                                                                                                       |

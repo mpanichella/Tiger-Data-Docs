@@ -1572,7 +1572,7 @@ Read the [documentation](/integrate/connectors/destination/tigerlake) to get sta
 - PostgreSQL 15 deprecation: Support will be removed after June 2026
 - WAL-based invalidation will be sunset in upcoming releases
 
-For more details on simplified hypertable creation, see [Create a hypertable](/api/latest/hypertable/create_table#samples).
+For more details on simplified hypertable creation, see [Create a hypertable](/reference/timescaledb/hypertables/create_table#samples).
 To learn more about Direct-to-Columnstore, see the [documentation](/build/data-management/write-data/insert) and this [blog post](https://www.tigerdata.com/blog/introducing-direct-compress-up-to-40x-faster-leaner-data-ingestion-for-developers-tech-preview).
 For currently supported TimescaleDB versions, see [Supported platforms](/get-started/timescaledb-supported-platforms).
 For a comprehensive list of changes, see the [TimescaleDB 2.23 release notes](https://github.com/timescale/timescaledb/blob/main/CHANGELOG.md#2230-2025-10-29).
@@ -1641,7 +1641,7 @@ New extension enabling BM25 on PostgreSQL for significant improvements in text s
 
 - **Configurable sparse indexes:** Manually configure sparse indexes on compressed hypertables
 - **UUIDv7 support:** Native support for UUIDv7 for compression and partitioning
-- **Multi-column SkipScan:** Support for multiple distinct keys with millisecond-fast deduplication and `DISTINCT ON` queries across billions of rows. Learn more in our [blog post](https://www.tigerdata.com/blog/skipscan-in-timescaledb-why-distinct-was-slow-how-we-built-it-and-how-you-can-use-it) and [documentation](/use-timescale/latest/query-data/skipscan).
+- **Multi-column SkipScan:** Support for multiple distinct keys with millisecond-fast deduplication and `DISTINCT ON` queries across billions of rows. Learn more in our [blog post](https://www.tigerdata.com/blog/skipscan-in-timescaledb-why-distinct-was-slow-how-we-built-it-and-how-you-can-use-it) and [documentation](/build/performance-optimization/skipscan).
 - **Compression improvements:** Default `segmentby` and `orderby` settings are now applied at compression time for each chunk, automatically adapting to evolving data patterns for better performance. This was previously set at the hypertable level and fixed across all chunks.
 
 For a comprehensive list of changes, refer to the TimescaleDB [2.22](https://github.com/timescale/timescaledb/releases/tag/2.22.0) and [2.22.1](https://github.com/timescale/timescaledb/releases/tag/2.22.1) release notes, as well as [TimescaleDB 2.22.1](https://github.com/timescale/timescaledb/releases).
@@ -1657,7 +1657,7 @@ For a comprehensive list of changes, refer to the TimescaleDB [2.22](https://git
 <h2 slot="heading" class="changelog-entry__title">Kafka Source Connector (beta)</h2>
 New Kafka Source Connector enables you to connect existing Kafka clusters directly to Tiger Cloud and ingest data from Kafka topics into hypertables. Supports AVRO format and Confluent Cloud and Amazon Managed Streaming for Apache Kafka.
 
-Learn more in the [Kafka Source Connector docs](/migrate/latest/livesync-for-kafka).
+Learn more in the [Kafka Source Connector docs](/migrate/livesync-for-kafka).
 
 <Image src={imgKafkaSourceConnectorTigerData} alt="Kafka source connector in Tiger Cloud" />
 
@@ -1675,7 +1675,7 @@ Learn more in the [Kafka Source Connector docs](/migrate/latest/livesync-for-kaf
 <h2 slot="heading" class="changelog-entry__title">Phased update rollouts, pg_cron, larger compute options, and backup reports</h2>
 ### Phased rollouts for TimescaleDB minor releases
 
-Starting with TimescaleDB 2.22.0, minor releases roll out in phases, dev services first, followed by prod after 21 days. See [Maintenance and upgrades](/use-timescale/latest/upgrades) for details.
+Starting with TimescaleDB 2.22.0, minor releases roll out in phases, dev services first, followed by prod after 21 days. See [Maintenance and upgrades](/deploy/tiger-cloud/tiger-cloud-aws/upgrades) for details.
 
 ### pg_cron extension
 
@@ -1832,7 +1832,7 @@ View catalog objects in the Console Explorer to understand database inner workin
 <h2 slot="heading" class="changelog-entry__title">Iceberg Destination Connector (TigerLake)</h2>
 ### Beta availability
 
-Beta Iceberg destination connector enables Scale and Enterprise users to integrate Tiger Cloud with Amazon S3 tables. For setup details, see the [Iceberg destination connector documentation](/use-timescale/latest/tigerlake).
+Beta Iceberg destination connector enables Scale and Enterprise users to integrate Tiger Cloud with Amazon S3 tables. For setup details, see the [Iceberg destination connector documentation](/integrate/connectors/destination/tigerlake).
 </ChangelogEntry>
 
 ## Console just got better
