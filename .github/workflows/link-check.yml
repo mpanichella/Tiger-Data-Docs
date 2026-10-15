@@ -54,7 +54,7 @@ jobs:
       - name: Install lychee
         if: steps.pr.outputs.number
         env:
-          LYCHEE_VERSION: v0.22.0
+          LYCHEE_VERSION: lychee-v0.22.0
         run: |
           set -euo pipefail
           curl -sSL "https://github.com/lycheeverse/lychee/releases/download/${LYCHEE_VERSION}/lychee-x86_64-unknown-linux-gnu.tar.gz" | tar xz -C /usr/local/bin lychee
@@ -79,7 +79,8 @@ jobs:
 
       - name: Publish the report
         if: steps.pr.outputs.number && always()
-        run: cat .linkcheck/report.md >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          if [ -f .linkcheck/report.md ]; then cat .linkcheck/report.md >> "$GITHUB_STEP_SUMMARY"; else echo "The check did not produce a report; see the job log." >> "$GITHUB_STEP_SUMMARY"; fi
 
       - name: Comment on the PR
         if: steps.pr.outputs.number && always()
