@@ -18,7 +18,7 @@ pnpm build:local      # Alias for pnpm build
 pnpm preview          # Preview production build
 pnpm format           # Prettier formatting
 pnpm lint:prose       # Vale prose lint on changed *.md/*.mdx (pnpm lint:prose -- --all for everything)
-pnpm lint:links       # Build with link checking (CHECK_LINKS=true)
+pnpm lint:links       # Check every internal link and anchor on the live site (needs lychee: brew install lychee)
 pnpm stainless:sync   # Sync stainless/stainless.yml with stainless/openapi.yml
 ```
 
@@ -134,7 +134,7 @@ Put first-party images in `src/assets/images/` and reference them with an `impor
 
 ### Links
 
-Use root-absolute internal links of the form `/section/page`, with no `.mdx` extension and no trailing slash (for example `/get-started/quickstart/create-service`). `starlight-links-validator` checks links during `pnpm lint:links`.
+Use root-absolute internal links of the form `/section/page`, with no `.mdx` extension and no trailing slash (for example `/get-started/quickstart/create-service`). Every internal link and anchor on the rendered site is checked on each preview deploy by the `link-check` workflow (`scripts/check-links.mjs` plus `lychee.toml`); `pnpm lint:links` runs the same check against production. A link that redirects counts as stale: point it at the destination.
 
 ### SQL in examples
 

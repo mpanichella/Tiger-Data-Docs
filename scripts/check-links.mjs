@@ -1,0 +1,179 @@
+#!/usr/bin/env node
+/**
+ * Check every internal link and anchor on a deployed copy of the docs.
+ *
+ * Pages come from the deployment's sitemap plus the REST reference nav, which
+ * the sitemap omits. Each page is fetched once, its <script> blocks are
+ * stripped (lychee's HTML parser stops at an inline script in our <head>),
+ * and every internal href is collected. lychee then checks each unique link
+ * exactly once, with settings from lychee.toml.
+ *
+ * Usage:
+ *   node scripts/check-links.mjs [--base https://host] [--out dir] [--fail-on-redirects]
+ *
+ * Environment:
+ *   LINKCHECK_BASE_URL   default base (falls back to https://www.tigerdata.com/docs)
+ *   VERCEL_BYPASS_SECRET sent as x-vercel-protection-bypass on every request
+ *
+ * Exit codes: 0 clean, 1 broken links (or redirects with --fail-on-redirects),
+ * 2 could not run (sitemap unreachable, lychee missing).
+ */
+import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
+
+const args = process.argv.slice(2);
+const opt = (name, fallback) => {
+  const i = args.indexOf(name);
+  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
+};
+const BASE = (opt("--base", process.env.LINKCHECK_BASE_URL) ?? "https://www.tigerdata.com/docs").replace(/\/$/, "");
+const OUT = resolve(opt("--out", ".linkcheck"));
+const FAIL_ON_REDIRECTS = args.includes("--fail-on-redirects");
+const BYPASS = process.env.VERCEL_BYPASS_SECRET ?? "";
+const origin = new URL(BASE).origin;
+const basePath = new URL(BASE).pathname.replace(/\/$/, ""); // "" or "/docs"
+
+// Hosts that once served the docs. A link to them is internal and stale, so it is
+// rewritten onto the deployment under test and then reported as a redirect.
+const OLD_HOSTS = ["https://docs.timescale.com", "https://docs.tigerdata.com"];
+const CANONICAL = "https://www.tigerdata.com/docs";
+
+const headers = { "user-agent": "Mozilla/5.0 (Tiger-Data-Docs link check)" };
+if (BYPASS) headers["x-vercel-protection-bypass"] = BYPASS;
+
+async function fetchText(url, attempts = 5) {
+  for (let i = 0; i < attempts; i++) {
+    const res = await fetch(url, { headers, redirect: "follow" });
+    if (res.status === 429) {
+      await new Promise((r) => setTimeout(r, 5000 * (i + 1)));
+      continue;
+    }
+    if (!res.ok) throw new Error(`${res.status} ${url}`);
+    return res.text();
+  }
+  throw new Error(`429 after ${attempts} attempts: ${url}`);
+}
+
+function locs(xml) {
+  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
+}
+
+function internalHrefs(html, pageUrl) {
+  const out = new Set();
+  for (const m of html.matchAll(/<a\b[^>]*?\shref="([^"]+)"/g)) {
+    const raw = m[1].replace(/&amp;/g, "&").trim();
+    if (!raw || raw.startsWith("mailto:") || raw.startsWith("tel:") || raw.startsWith("javascript:")) continue;
+    let u;
+    try {
+      let href = raw;
+      for (const h of OLD_HOSTS) if (href.startsWith(h + "/")) href = BASE + href.slice(h.length);
+      if (href.startsWith(CANONICAL + "/") || href === CANONICAL) href = BASE + href.slice(CANONICAL.length);
+      u = new URL(href, pageUrl);
+    } catch {
+      continue;
+    }
+    if (u.origin !== origin) continue;
+    if (basePath && !u.pathname.startsWith(basePath + "/") && u.pathname !== basePath) continue;
+    u.searchParams.delete("x-vercel-protection-bypass");
+    u.searchParams.delete("x-vercel-set-bypass-cookie");
+    out.add(u.toString());
+  }
+  return out;
+}
+
+async function pool(items, limit, fn) {
+  const results = [];
+  let i = 0;
+  await Promise.all(
+    Array.from({ length: limit }, async () => {
+      while (i < items.length) {
+        const idx = i++;
+        results[idx] = await fn(items[idx]);
+      }
+    }),
+  );
+  return results;
+}
+
+// 1. Page list: sitemap(s) + REST reference nav.
+let pages = new Set();
+try {
+  const index = await fetchText(`${BASE}/sitemap-index.xml`);
+  for (const sm of locs(index)) for (const p of locs(await fetchText(sm))) pages.add(p);
+} catch (e) {
+  console.error(`Could not read the sitemap: ${e.message}`);
+  process.exit(2);
+}
+try {
+  const rest = await fetchText(`${BASE}/reference/tiger-cloud-rest`);
+  for (const h of internalHrefs(rest, `${BASE}/reference/tiger-cloud-rest`)) {
+    if (h.includes("/reference/tiger-cloud-rest/") && !h.includes("#")) pages.add(h);
+  }
+} catch (e) {
+  console.warn(`REST reference nav not read: ${e.message}`);
+}
+// The sitemap may name the canonical host; check against the deployment we were given.
+pages = new Set([...pages].map((p) => p.replace(/^https?:\/\/[^/]+\/docs/, BASE).replace(/^https?:\/\/[^/]+/, origin)));
+console.log(`${pages.size} pages to scan on ${BASE}`);
+
+// 2. Fetch, strip scripts, collect links.
+const links = new Set();
+const linkSources = new Map(); // href -> first page that links to it
+const failedPages = [];
+await pool([...pages], 6, async (page) => {
+  try {
+    const html = (await fetchText(page)).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+    for (const h of internalHrefs(html, page)) {
+      links.add(h);
+      if (!linkSources.has(h)) linkSources.set(h, page);
+    }
+  } catch (e) {
+    failedPages.push(`${page} (${e.message})`);
+  }
+});
+console.log(`${links.size} unique internal links collected from ${pages.size - failedPages.length} pages`);
+if (failedPages.length) console.warn(`Pages that could not be fetched:\n  ${failedPages.join("\n  ")}`);
+
+await mkdir(OUT, { recursive: true });
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+await writeFile(
+  `${OUT}/links.html`,
+  `<!doctype html><html><body>\n${[...links].sort().map((u) => `<a href="${esc(u)}">link</a>`).join("\n")}\n</body></html>\n`,
+);
+
+// 3. lychee.
+const lycheeArgs = [
+  "--config", "lychee.toml", "--no-progress", "--format", "json", "--output", `${OUT}/lychee.json`,
+];
+if (BYPASS) lycheeArgs.push("--header", `x-vercel-protection-bypass: ${BYPASS}`);
+lycheeArgs.push(`${OUT}/links.html`);
+const run = spawnSync("lychee", lycheeArgs, { stdio: ["ignore", "inherit", "inherit"] });
+if (run.error) {
+  console.error(`lychee could not be started: ${run.error.message}. Install it with \`brew install lychee\`.`);
+  process.exit(2);
+}
+
+// 4. Report.
+const report = JSON.parse(await readFile(`${OUT}/lychee.json`, "utf8"));
+const flat = (map) => Object.values(map ?? {}).flat();
+const errors = flat(report.error_map).concat(flat(report.fail_map));
+const redirects = flat(report.redirect_map ?? {});
+const line = (r) => {
+  const url = r.url;
+  const via = linkSources.get(url) ?? linkSources.get(url.replace(/\/$/, "")) ?? "";
+  const where = via ? ` (linked from ${via.replace(BASE, "") || "/"})` : "";
+  return `- ${url.replace(BASE, "") || "/"} : ${r.status?.text ?? r.status?.code ?? JSON.stringify(r.status)}${where}`;
+};
+const md = [];
+md.push(`## Link check: ${BASE}`, "");
+md.push(`${pages.size} pages scanned, ${links.size} unique internal links checked.`, "");
+md.push(`| Result | Count |`, `|---|---|`, `| Working | ${report.successful ?? 0} |`, `| Broken | ${errors.length} |`, `| Redirected (stale) | ${redirects.length} |`, "");
+if (errors.length) md.push(`### Broken links (${errors.length})`, "", ...errors.map(line), "");
+if (redirects.length) md.push(`### Links that redirect (${redirects.length})`, "", "A link that redirects still works but points at an old URL. Update it to the destination.", "", ...redirects.map(line), "");
+if (failedPages.length) md.push(`### Pages that could not be fetched (${failedPages.length})`, "", ...failedPages.map((p) => `- ${p}`), "");
+await writeFile(`${OUT}/report.md`, md.join("\n"));
+console.log(md.join("\n"));
+
+const failed = errors.length > 0 || (FAIL_ON_REDIRECTS && redirects.length > 0) || failedPages.length > 0;
+process.exit(failed ? 1 : 0);
