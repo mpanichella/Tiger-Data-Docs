@@ -148,7 +148,7 @@ CREATE MATERIALIZED VIEW example_15
 WITH (timescaledb.continuous)
 AS SELECT measure_id,
     time_bucket('15 min'::interval, ts) as bucket,
-    counter_agg(ts, val, time_bucket_range('15 min'::interval, ts))
+    counter_agg(ts, val)
 FROM example
 GROUP BY measure_id, time_bucket('15 min'::interval, ts);
 ```
