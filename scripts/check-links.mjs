@@ -19,8 +19,10 @@
  * 2 could not run (sitemap unreachable, lychee missing).
  */
 import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const args = process.argv.slice(2);
 const opt = (name, fallback) => {
@@ -35,6 +37,33 @@ const origin = new URL(BASE).origin;
 // The sitemap and canonical links name the production host and base path; map them onto the deployment.
 const onDeployment = (u) => u.replace(/^https?:\/\/[^/]+\/docs/, BASE).replace(/^https?:\/\/[^/]+/, origin);
 const basePath = new URL(BASE).pathname.replace(/\/$/, ""); // "" or "/docs"
+
+// Previews cannot serve the vercel.json redirects (their keys carry the /docs prefix), so a
+// link that production redirects answers 404 on a preview. The rules are applied here, so
+// such a link is reported as stale with its destination, exactly as it would be on production.
+const rulesFile = resolve(dirname(fileURLToPath(import.meta.url)), "../vercel.json");
+const redirectRules = existsSync(rulesFile)
+  ? (JSON.parse(await readFile(rulesFile, "utf8")).redirects ?? []).map((r) => {
+      const names = [];
+      let re = "^";
+      for (const seg of r.source.replace(/^\/docs/, "").split("/").slice(1)) {
+        if (seg.startsWith(":") && seg.endsWith("*")) { names.push(seg.slice(1, -1)); re += "(?:/(.*))?"; }
+        else if (seg.startsWith(":")) { names.push(seg.slice(1)); re += "/([^/]+)"; }
+        else re += "/" + seg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+      return { re: new RegExp(re + "$"), names, destination: r.destination.replace(/^\/docs/, "") };
+    })
+  : [];
+function productionRedirect(path) {
+  for (const { re, names, destination } of redirectRules) {
+    const m = path.match(re);
+    if (!m) continue;
+    let dest = destination;
+    names.forEach((n, i) => { dest = dest.replace(new RegExp(`:${n}\\*?`, "g"), m[i + 1] ?? ""); });
+    return dest.replace(/\/$/, "") || "/";
+  }
+  return null;
+}
 
 // Hosts that once served the docs. A link to them is internal and stale, so it is
 // rewritten onto the deployment under test and then reported as a redirect.
@@ -159,8 +188,29 @@ if (run.error) {
 // 4. Report.
 const report = JSON.parse(await readFile(`${OUT}/lychee.json`, "utf8"));
 const flat = (map) => Object.values(map ?? {}).flat();
-const errors = flat(report.error_map).concat(flat(report.fail_map));
+let errors = flat(report.error_map).concat(flat(report.fail_map));
 const redirects = flat(report.redirect_map ?? {});
+// 3c. A 404 that production would redirect is a stale link, provided the destination exists.
+const destinations = new Map(); // destination path -> html or null
+async function destinationHtml(dest) {
+  if (!destinations.has(dest)) destinations.set(dest, await fetchText(`${BASE}${dest}`).catch(() => null));
+  return destinations.get(dest);
+}
+const stillBroken = [];
+for (const r of errors) {
+  const u = new URL(r.url);
+  const dest = productionRedirect(u.pathname.slice(basePath.length).replace(/\/$/, "") || "/");
+  if (!dest) { stillBroken.push(r); continue; }
+  const html = await destinationHtml(dest);
+  const fragment = decodeURIComponent(u.hash.slice(1));
+  if (html === null) { stillBroken.push({ ...r, status: { text: `redirects to ${dest}, which does not exist` } }); continue; }
+  if (fragment && !new RegExp(`id="${fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`).test(html)) {
+    stillBroken.push({ ...r, status: { text: `redirects to ${dest}, which has no #${fragment}` } });
+    continue;
+  }
+  redirects.push({ ...r, status: { text: `Redirect to ${dest}${u.hash} (vercel.json)` } });
+}
+errors = stillBroken;
 const line = (r) => {
   const url = r.url;
   const via = linkSources.get(url) ?? linkSources.get(url.replace(/\/$/, "")) ?? "";
