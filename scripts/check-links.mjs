@@ -9,7 +9,11 @@
  * exactly once, with settings from lychee.toml.
  *
  * Usage:
- *   node scripts/check-links.mjs [--base https://host] [--out dir] [--fail-on-redirects]
+ *   node scripts/check-links.mjs [--base https://host] [--out dir] [--fail-on-redirects] [--external]
+ *
+ * --external also checks every link that leaves the site. Those are checked
+ * with looser rules (see EXTERNAL_ACCEPT below): hosts that block bots answer
+ * 403 or 429 to a checker and are not broken.
  *
  * Environment:
  *   LINKCHECK_BASE_URL   default base (falls back to https://www.tigerdata.com/docs)
@@ -32,6 +36,19 @@ const opt = (name, fallback) => {
 const BASE = (opt("--base", process.env.LINKCHECK_BASE_URL) ?? "https://www.tigerdata.com/docs").replace(/\/$/, "");
 const OUT = resolve(opt("--out", ".linkcheck"));
 const FAIL_ON_REDIRECTS = args.includes("--fail-on-redirects");
+const EXTERNAL = args.includes("--external");
+// Status codes that do not mean an external link is dead: bot blocks and rate limits.
+const EXTERNAL_ACCEPT = "200..=299,403,429,999";
+// External hosts that cannot be checked from CI: login walls, bot walls, placeholders.
+const EXTERNAL_EXCLUDE = [
+  "^https?://(localhost|127\\.0\\.0\\.1)",
+  "^https?://([a-z0-9-]+\\.)?example\\.(com|org|net)",
+  "^https?://([a-z0-9-]+\\.)?(linkedin|twitter|x)\\.com/",
+  "^https?://console\\.cloud\\.(tigerdata|timescale)\\.com/",
+  // Negotiates TLS in a way the checker's client cannot; the site works in a browser.
+  "^https?://(www\\.)?inductiveautomation\\.com/",
+  "^https?://github\\.com/.*/(edit|blob)/.*\\.mdx?$",
+];
 const BYPASS = process.env.VERCEL_BYPASS_SECRET ?? "";
 const origin = new URL(BASE).origin;
 // The sitemap and canonical links name the production host and base path; map them onto the deployment.
@@ -77,7 +94,7 @@ async function fetchText(url, attempts = 5) {
   for (let i = 0; i < attempts; i++) {
     const res = await fetch(url, { headers, redirect: "follow" });
     if (res.status === 429) {
-      await new Promise((r) => setTimeout(r, 5000 * (i + 1)));
+      await new Promise((r) => setTimeout(r, 10000 * (i + 1)));
       continue;
     }
     if (!res.ok) throw new Error(`${res.status} ${url}`);
@@ -90,10 +107,36 @@ function locs(xml) {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
 }
 
+function externalHrefs(html, pageUrl) {
+  const out = new Set();
+  for (const m of html.matchAll(/<a\b[^>]*?\shref="([^"]+)"/g)) {
+    const raw = decodeEntities(m[1]).trim();
+    if (!/^https?:\/\//i.test(raw)) continue;
+    let u;
+    try {
+      u = new URL(raw, pageUrl);
+    } catch {
+      continue;
+    }
+    if (u.origin === origin) continue;
+    if (OLD_HOSTS.some((h) => u.origin === h) || raw.startsWith(CANONICAL)) continue;
+    u.hash = "";
+    out.add(u.toString());
+  }
+  return out;
+}
+
+// Attributes are HTML-escaped; an apostrophe arrives as &#39; and must not be cut at its #.
+function decodeEntities(v) {
+  return v
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
 function internalHrefs(html, pageUrl) {
   const out = new Set();
   for (const m of html.matchAll(/<a\b[^>]*?\shref="([^"]+)"/g)) {
-    const raw = m[1].replace(/&amp;/g, "&").trim();
+    const raw = decodeEntities(m[1]).trim();
     if (!raw || raw.startsWith("mailto:") || raw.startsWith("tel:") || raw.startsWith("javascript:")) continue;
     let u;
     try {
@@ -150,20 +193,27 @@ console.log(`${pages.size} pages to scan on ${BASE}`);
 
 // 2. Fetch, strip scripts, collect links.
 const links = new Set();
+const externals = new Set();
 const linkSources = new Map(); // href -> first page that links to it
 const failedPages = [];
-await pool([...pages], 6, async (page) => {
+await pool([...pages], 3, async (page) => {
   try {
     const html = (await fetchText(page)).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
     for (const h of internalHrefs(html, page)) {
       links.add(h);
       if (!linkSources.has(h)) linkSources.set(h, page);
     }
+    if (EXTERNAL) {
+      for (const h of externalHrefs(html, page)) {
+        externals.add(h);
+        if (!linkSources.has(h)) linkSources.set(h, page);
+      }
+    }
   } catch (e) {
     failedPages.push(`${page} (${e.message})`);
   }
 });
-console.log(`${links.size} unique internal links collected from ${pages.size - failedPages.length} pages`);
+console.log(`${links.size} unique internal links${EXTERNAL ? ` and ${externals.size} external links` : ""} collected from ${pages.size - failedPages.length} pages`);
 if (failedPages.length) console.warn(`Pages that could not be fetched:\n  ${failedPages.join("\n  ")}`);
 
 await mkdir(OUT, { recursive: true });
@@ -183,6 +233,40 @@ const run = spawnSync("lychee", lycheeArgs, { stdio: ["ignore", "inherit", "inhe
 if (run.error) {
   console.error(`lychee could not be started: ${run.error.message}. Install it with \`brew install lychee\`.`);
   process.exit(2);
+}
+// lychee exits 2 when it found broken links, which is a result, not a failure.
+if (![0, 2].includes(run.status)) {
+  console.error(`lychee failed (exit ${run.status}).`);
+  process.exit(2);
+}
+
+// 3b. External links, looser rules, no fragment checks, nothing private.
+let external = { errors: [], checked: 0 };
+if (EXTERNAL) {
+  await writeFile(
+    `${OUT}/external.html`,
+    `<!doctype html><html><body>\n${[...externals].sort().map((u) => `<a href="${esc(u)}">link</a>`).join("\n")}\n</body></html>\n`,
+  );
+  const extArgs = [
+    "--no-progress", "--format", "json", "--output", `${OUT}/lychee-external.json`,
+    "--accept", EXTERNAL_ACCEPT, "--max-concurrency", "8", "--max-retries", "2", "--retry-wait-time", "5",
+    "--timeout", "30", "--exclude-all-private",
+    "--user-agent", "Mozilla/5.0 (Tiger-Data-Docs link check)",
+  ];
+  for (const re of EXTERNAL_EXCLUDE) extArgs.push("--exclude", re);
+  extArgs.push(`${OUT}/external.html`);
+  const extRun = spawnSync("lychee", extArgs, { stdio: ["ignore", "inherit", "inherit"] });
+  if (extRun.error || ![0, 2].includes(extRun.status)) {
+    console.error(`lychee failed on the external links (exit ${extRun.status ?? extRun.error?.message}).`);
+    process.exit(2);
+  }
+  const extReport = JSON.parse(await readFile(`${OUT}/lychee-external.json`, "utf8"));
+  const flatExt = (map) => Object.values(map ?? {}).flat();
+  external = {
+    errors: flatExt(extReport.error_map).concat(flatExt(extReport.fail_map)),
+    checked: extReport.total ?? externals.size,
+    excluded: extReport.excludes ?? 0,
+  };
 }
 
 // 4. Report.
@@ -215,17 +299,21 @@ const line = (r) => {
   const url = r.url;
   const via = linkSources.get(url) ?? linkSources.get(url.replace(/\/$/, "")) ?? "";
   const where = via ? ` (linked from ${via.replace(BASE, "") || "/"})` : "";
-  return `- ${url.replace(BASE, "") || "/"} : ${r.status?.text ?? r.status?.code ?? JSON.stringify(r.status)}${where}`;
+  const shown = url.startsWith(BASE) ? url.replace(BASE, "") || "/" : url;
+  return `- ${shown} : ${r.status?.text ?? r.status?.code ?? JSON.stringify(r.status)}${where}`;
 };
 const md = [];
 md.push(`## Link check: ${BASE}`, "");
-md.push(`${pages.size} pages scanned, ${links.size} unique internal links checked.`, "");
-md.push(`| Result | Count |`, `|---|---|`, `| Working | ${report.successful ?? 0} |`, `| Broken | ${errors.length} |`, `| Redirected (stale) | ${redirects.length} |`, "");
+md.push(`${pages.size} pages scanned, ${links.size} unique internal links checked${EXTERNAL ? `, ${external.checked} external links checked` : ""}.`, "");
+md.push(`| Result | Count |`, `|---|---|`, `| Working | ${report.successful ?? 0} |`, `| Broken | ${errors.length} |`, `| Redirected (stale) | ${redirects.length} |`);
+if (EXTERNAL) md.push(`| Broken external | ${external.errors.length} |`, `| External excluded (edit links, Console, login walls) | ${external.excluded} |`);
+md.push("");
 if (errors.length) md.push(`### Broken links (${errors.length})`, "", ...errors.map(line), "");
+if (EXTERNAL && external.errors.length) md.push(`### Broken external links (${external.errors.length})`, "", "Hosts that block bots are accepted and not listed here; what is listed answered 4xx or 5xx or did not answer.", "", ...external.errors.map(line), "");
 if (redirects.length) md.push(`### Links that redirect (${redirects.length})`, "", "A link that redirects still works but points at an old URL. Update it to the destination.", "", ...redirects.map(line), "");
 if (failedPages.length) md.push(`### Pages that could not be fetched (${failedPages.length})`, "", ...failedPages.map((p) => `- ${p}`), "");
 await writeFile(`${OUT}/report.md`, md.join("\n"));
 console.log(md.join("\n"));
 
-const failed = errors.length > 0 || (FAIL_ON_REDIRECTS && redirects.length > 0) || failedPages.length > 0;
+const failed = errors.length > 0 || external.errors.length > 0 || (FAIL_ON_REDIRECTS && redirects.length > 0) || failedPages.length > 0;
 process.exit(failed ? 1 : 0);

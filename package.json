@@ -16,6 +16,7 @@
     "format": "prettier --write .",
     "lint:prose": "node scripts/lint-prose.mjs",
     "lint:links": "node scripts/check-links.mjs",
+    "lint:links:external": "node scripts/check-links.mjs --external",
     "stainless:sync": "node scripts/sync-stainless-resources.mjs"
   },
   "dependencies": {
