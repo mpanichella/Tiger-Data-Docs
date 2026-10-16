@@ -95,8 +95,11 @@ jobs:
             const pull_number = parseInt(process.env.PR_NUMBER, 10);
             let report = "";
             try { report = fs.readFileSync(".linkcheck/report.md", "utf8"); } catch {}
-            const ok = process.env.EXIT === "0";
-            const body = `${marker}\n${ok ? "✅" : "❌"} **Link check** ${ok ? "passed" : "found problems"} on this preview.\n\n${report}`;
+            const exit = process.env.EXIT;
+            const verdict = exit === "0" ? "✅ **Link check** passed on this preview."
+              : exit === "1" ? "❌ **Link check** found problems on this preview."
+              : "⚠️ **Link check** could not run on this preview; see the job log.";
+            const body = `${marker}\n${verdict}\n\n${report}`;
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: pull_number, per_page: 100,
             });
@@ -110,5 +113,5 @@ jobs:
       - name: Fail on broken links
         if: steps.pr.outputs.number && steps.check.outputs.exit != '0'
         run: |
-          echo "Broken links found. See the job summary or the PR comment."
+          if [ "${{ steps.check.outputs.exit }}" = "1" ]; then echo "Broken links found. See the job summary or the PR comment."; else echo "The link check could not run. See the job log."; fi
           exit 1

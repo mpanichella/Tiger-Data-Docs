@@ -32,6 +32,8 @@ const OUT = resolve(opt("--out", ".linkcheck"));
 const FAIL_ON_REDIRECTS = args.includes("--fail-on-redirects");
 const BYPASS = process.env.VERCEL_BYPASS_SECRET ?? "";
 const origin = new URL(BASE).origin;
+// The sitemap and canonical links name the production host and base path; map them onto the deployment.
+const onDeployment = (u) => u.replace(/^https?:\/\/[^/]+\/docs/, BASE).replace(/^https?:\/\/[^/]+/, origin);
 const basePath = new URL(BASE).pathname.replace(/\/$/, ""); // "" or "/docs"
 
 // Hosts that once served the docs. A link to them is internal and stale, so it is
@@ -100,7 +102,7 @@ async function pool(items, limit, fn) {
 let pages = new Set();
 try {
   const index = await fetchText(`${BASE}/sitemap-index.xml`);
-  for (const sm of locs(index)) for (const p of locs(await fetchText(sm))) pages.add(p);
+  for (const sm of locs(index)) for (const p of locs(await fetchText(onDeployment(sm)))) pages.add(p);
 } catch (e) {
   console.error(`Could not read the sitemap: ${e.message}`);
   process.exit(2);
@@ -114,7 +116,7 @@ try {
   console.warn(`REST reference nav not read: ${e.message}`);
 }
 // The sitemap may name the canonical host; check against the deployment we were given.
-pages = new Set([...pages].map((p) => p.replace(/^https?:\/\/[^/]+\/docs/, BASE).replace(/^https?:\/\/[^/]+/, origin)));
+pages = new Set([...pages].map(onDeployment));
 console.log(`${pages.size} pages to scan on ${BASE}`);
 
 // 2. Fetch, strip scripts, collect links.
