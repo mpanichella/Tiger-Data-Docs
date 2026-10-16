@@ -73,7 +73,7 @@ Key overrides and components in `src/components/`:
 
 Defined in `src/content.config.ts`. Extends Starlight's `docsSchema` with custom fields:
 
-- `pageLabels`: tags like `Experimental`, `Popular feature`, `Optional`.
+- `pageLabels`: pills under the title for a page-level status or origin (`Early access`, `Deprecated`, `Vendor-provided`, and so on). Facts about one element (`SinceRelease`, `CommunityBadge`) stay inline next to that element, never in `pageLabels`.
 - `overviewDescription`: dropdown descriptions.
 - `integrationSchema`: metadata for the Integrate section.
 - `learnMoreSchema`: the right-rail card (see [Custom components](#custom-components)).
