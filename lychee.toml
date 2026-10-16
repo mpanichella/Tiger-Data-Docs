@@ -26,6 +26,6 @@ exclude = [
   "#_top$",
   # Tab state in the URL hash on pages with Console and CLI tabs.
   "#tab=",
-  # The site root: the docs home link on previews, which redirect it to /docs.
-  "^https?://[^/]+/?$",
+  # The docs home link: the site root on previews, /docs/ on production, both redirected.
+  "^https?://[^/]+(/docs)?/?$",
 ]
