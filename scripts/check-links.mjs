@@ -45,6 +45,8 @@ const EXTERNAL_EXCLUDE = [
   "^https?://([a-z0-9-]+\\.)?example\\.(com|org|net)",
   "^https?://([a-z0-9-]+\\.)?(linkedin|twitter|x)\\.com/",
   "^https?://console\\.cloud\\.(tigerdata|timescale)\\.com/",
+  // Negotiates TLS in a way the checker's client cannot; the site works in a browser.
+  "^https?://(www\\.)?inductiveautomation\\.com/",
   "^https?://github\\.com/.*/(edit|blob)/.*\\.mdx?$",
 ];
 const BYPASS = process.env.VERCEL_BYPASS_SECRET ?? "";
@@ -92,7 +94,7 @@ async function fetchText(url, attempts = 5) {
   for (let i = 0; i < attempts; i++) {
     const res = await fetch(url, { headers, redirect: "follow" });
     if (res.status === 429) {
-      await new Promise((r) => setTimeout(r, 5000 * (i + 1)));
+      await new Promise((r) => setTimeout(r, 10000 * (i + 1)));
       continue;
     }
     if (!res.ok) throw new Error(`${res.status} ${url}`);
@@ -108,7 +110,7 @@ function locs(xml) {
 function externalHrefs(html, pageUrl) {
   const out = new Set();
   for (const m of html.matchAll(/<a\b[^>]*?\shref="([^"]+)"/g)) {
-    const raw = m[1].replace(/&amp;/g, "&").trim();
+    const raw = decodeEntities(m[1]).trim();
     if (!/^https?:\/\//i.test(raw)) continue;
     let u;
     try {
@@ -124,10 +126,17 @@ function externalHrefs(html, pageUrl) {
   return out;
 }
 
+// Attributes are HTML-escaped; an apostrophe arrives as &#39; and must not be cut at its #.
+function decodeEntities(v) {
+  return v
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
 function internalHrefs(html, pageUrl) {
   const out = new Set();
   for (const m of html.matchAll(/<a\b[^>]*?\shref="([^"]+)"/g)) {
-    const raw = m[1].replace(/&amp;/g, "&").trim();
+    const raw = decodeEntities(m[1]).trim();
     if (!raw || raw.startsWith("mailto:") || raw.startsWith("tel:") || raw.startsWith("javascript:")) continue;
     let u;
     try {
@@ -187,7 +196,7 @@ const links = new Set();
 const externals = new Set();
 const linkSources = new Map(); // href -> first page that links to it
 const failedPages = [];
-await pool([...pages], 6, async (page) => {
+await pool([...pages], 3, async (page) => {
   try {
     const html = (await fetchText(page)).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
     for (const h of internalHrefs(html, page)) {
@@ -225,6 +234,11 @@ if (run.error) {
   console.error(`lychee could not be started: ${run.error.message}. Install it with \`brew install lychee\`.`);
   process.exit(2);
 }
+// lychee exits 2 when it found broken links, which is a result, not a failure.
+if (![0, 2].includes(run.status)) {
+  console.error(`lychee failed (exit ${run.status}).`);
+  process.exit(2);
+}
 
 // 3b. External links, looser rules, no fragment checks, nothing private.
 let external = { errors: [], checked: 0 };
@@ -236,14 +250,14 @@ if (EXTERNAL) {
   const extArgs = [
     "--no-progress", "--format", "json", "--output", `${OUT}/lychee-external.json`,
     "--accept", EXTERNAL_ACCEPT, "--max-concurrency", "8", "--max-retries", "2", "--retry-wait-time", "5",
-    "--timeout", "30", "--exclude-all-private", "--exclude-mail",
+    "--timeout", "30", "--exclude-all-private",
     "--user-agent", "Mozilla/5.0 (Tiger-Data-Docs link check)",
   ];
   for (const re of EXTERNAL_EXCLUDE) extArgs.push("--exclude", re);
   extArgs.push(`${OUT}/external.html`);
   const extRun = spawnSync("lychee", extArgs, { stdio: ["ignore", "inherit", "inherit"] });
-  if (extRun.error) {
-    console.error(`lychee could not be started: ${extRun.error.message}`);
+  if (extRun.error || ![0, 2].includes(extRun.status)) {
+    console.error(`lychee failed on the external links (exit ${extRun.status ?? extRun.error?.message}).`);
     process.exit(2);
   }
   const extReport = JSON.parse(await readFile(`${OUT}/lychee-external.json`, "utf8"));
@@ -292,7 +306,7 @@ const md = [];
 md.push(`## Link check: ${BASE}`, "");
 md.push(`${pages.size} pages scanned, ${links.size} unique internal links checked${EXTERNAL ? `, ${external.checked} external links checked` : ""}.`, "");
 md.push(`| Result | Count |`, `|---|---|`, `| Working | ${report.successful ?? 0} |`, `| Broken | ${errors.length} |`, `| Redirected (stale) | ${redirects.length} |`);
-if (EXTERNAL) md.push(`| Broken external | ${external.errors.length} |`, `| External skipped (unverifiable hosts) | ${external.excluded} |`);
+if (EXTERNAL) md.push(`| Broken external | ${external.errors.length} |`, `| External excluded (edit links, Console, login walls) | ${external.excluded} |`);
 md.push("");
 if (errors.length) md.push(`### Broken links (${errors.length})`, "", ...errors.map(line), "");
 if (EXTERNAL && external.errors.length) md.push(`### Broken external links (${external.errors.length})`, "", "Hosts that block bots are accepted and not listed here; what is listed answered 4xx or 5xx or did not answer.", "", ...external.errors.map(line), "");
