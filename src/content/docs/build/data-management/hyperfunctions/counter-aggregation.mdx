@@ -197,16 +197,15 @@ target: cloud, self-hosted
 10. run SQL: `SELECT measure_id, delta(counter_agg(ts, val)) FROM example GROUP BY measure_id;`
 11. expect rows: `SELECT 1 FROM (SELECT measure_id, delta(counter_agg(ts, val)) AS d FROM example GROUP BY measure_id) t WHERE measure_id = 1 AND d = 25`
 12. run SQL: `SELECT measure_id, time_bucket('15 min'::interval, ts) as bucket, delta(counter_agg(ts, val)) FROM example GROUP BY measure_id, time_bucket('15 min'::interval, ts);`
-13. run SQL: `DROP TABLE example;`
-14. run SQL: `CREATE TABLE example (measure_id BIGINT, ts TIMESTAMPTZ, val DOUBLE PRECISION, PRIMARY KEY (measure_id, ts)) WITH (tsdb.hypertable, tsdb.chunk_interval='15 days');`
-15. expect rows: `SELECT 1 FROM timescaledb_information.hypertables WHERE hypertable_name = 'example'`
-16. expect rows: `SELECT 1 FROM timescaledb_information.dimensions WHERE hypertable_name = 'example' AND column_name = 'ts' AND time_interval = INTERVAL '15 days'`
-17. expect rows: `SELECT 1 FROM timescaledb_information.jobs WHERE proc_name = 'policy_compression' AND hypertable_name = 'example' AND (config->>'compress_after')::interval = INTERVAL '15 days'`
-18. run SQL: `INSERT INTO example VALUES (1, '2026-01-01 00:00+00', 10), (1, '2026-01-01 00:05+00', 20), (1, '2026-01-01 00:10+00', 5), (1, '2026-01-01 00:14+00', 15), (2, '2026-01-01 00:00+00', 100), (2, '2026-01-01 00:10+00', 130);`
-19. run SQL: `SELECT measure_id, time_bucket('15 min'::interval, ts) as bucket, extrapolated_delta(counter_agg(ts, val, toolkit_experimental.time_bucket_range('15 min'::interval, ts)), method => 'prometheus') as delta FROM example GROUP BY measure_id, time_bucket('15 min'::interval, ts);`
-20. expect rows: `SELECT 1 FROM (SELECT measure_id, extrapolated_delta(counter_agg(ts, val, toolkit_experimental.time_bucket_range('15 min'::interval, ts)), method => 'prometheus') AS d FROM example GROUP BY measure_id, time_bucket('15 min'::interval, ts)) t WHERE measure_id = 1 AND d > 25`
-21. run SQL: `CREATE MATERIALIZED VIEW example_15 WITH (timescaledb.continuous) AS SELECT measure_id, time_bucket('15 min'::interval, ts) as bucket, counter_agg(ts, val) FROM example GROUP BY measure_id, time_bucket('15 min'::interval, ts);`
-22. expect rows: `SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'example_15'`
-23. run SQL: `SELECT measure_id, time_bucket('1 day'::interval, bucket), delta(rollup(counter_agg)) FROM example_15 GROUP BY measure_id, time_bucket('1 day'::interval, bucket);`
-24. expect rows: `SELECT 1 FROM (SELECT measure_id, delta(rollup(counter_agg)) AS d FROM example_15 GROUP BY measure_id, time_bucket('1 day'::interval, bucket)) t WHERE measure_id = 1 AND d = 25`
+13. run SQL: `DROP TABLE example; CREATE TABLE example (measure_id BIGINT, ts TIMESTAMPTZ, val DOUBLE PRECISION, PRIMARY KEY (measure_id, ts)) WITH (tsdb.hypertable, tsdb.chunk_interval='15 days');`
+14. expect rows: `SELECT 1 FROM timescaledb_information.hypertables WHERE hypertable_name = 'example'`
+15. expect rows: `SELECT 1 FROM timescaledb_information.dimensions WHERE hypertable_name = 'example' AND column_name = 'ts' AND time_interval = INTERVAL '15 days'`
+16. expect rows: `SELECT 1 FROM timescaledb_information.jobs WHERE proc_name = 'policy_compression' AND hypertable_name = 'example' AND (config->>'compress_after')::interval = INTERVAL '15 days'`
+17. run SQL: `INSERT INTO example VALUES (1, '2026-01-01 00:00+00', 10), (1, '2026-01-01 00:05+00', 20), (1, '2026-01-01 00:10+00', 5), (1, '2026-01-01 00:14+00', 15), (2, '2026-01-01 00:00+00', 100), (2, '2026-01-01 00:10+00', 130);`
+18. run SQL: `SELECT measure_id, time_bucket('15 min'::interval, ts) as bucket, extrapolated_delta(counter_agg(ts, val, toolkit_experimental.time_bucket_range('15 min'::interval, ts)), method => 'prometheus') as delta FROM example GROUP BY measure_id, time_bucket('15 min'::interval, ts);`
+19. expect rows: `SELECT 1 FROM (SELECT measure_id, extrapolated_delta(counter_agg(ts, val, toolkit_experimental.time_bucket_range('15 min'::interval, ts)), method => 'prometheus') AS d FROM example GROUP BY measure_id, time_bucket('15 min'::interval, ts)) t WHERE measure_id = 1 AND d > 25`
+20. run SQL: `CREATE MATERIALIZED VIEW example_15 WITH (timescaledb.continuous) AS SELECT measure_id, time_bucket('15 min'::interval, ts) as bucket, counter_agg(ts, val) FROM example GROUP BY measure_id, time_bucket('15 min'::interval, ts);`
+21. expect rows: `SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'example_15'`
+22. run SQL: `SELECT measure_id, time_bucket('1 day'::interval, bucket), delta(rollup(counter_agg)) FROM example_15 GROUP BY measure_id, time_bucket('1 day'::interval, bucket);`
+23. expect rows: `SELECT 1 FROM (SELECT measure_id, delta(rollup(counter_agg)) AS d FROM example_15 GROUP BY measure_id, time_bucket('1 day'::interval, bucket)) t WHERE measure_id = 1 AND d = 25`
 </TestPlan>

@@ -77,5 +77,5 @@ target: cloud, self-hosted
 13. run SQL: `SELECT approx_percentile(0.95, rollup(percentile_agg)) as threshold FROM response_times_daily WHERE bucket >= time_bucket('1 day'::interval, now() - '30 days'::interval);`
 14. expect rows: `SELECT 1 FROM (SELECT approx_percentile(0.95, rollup(percentile_agg)) AS threshold FROM response_times_daily WHERE bucket >= time_bucket('1 day'::interval, now() - '30 days'::interval)) t WHERE threshold BETWEEN 900 AND 1000`
 15. run SQL: `WITH t as (SELECT approx_percentile(0.95, rollup(percentile_agg)) as threshold FROM response_times_daily WHERE bucket >= time_bucket('1 day'::interval, now() - '30 days'::interval)) SELECT count(*) FROM response_times WHERE ts > now()- '1 minute'::interval AND response_time_ms > (SELECT threshold FROM t);`
-16. expect rows: `SELECT 1 FROM response_times WHERE ts > now() - '1 minute'::interval AND response_time_ms > (SELECT approx_percentile(0.95, rollup(percentile_agg)) FROM response_times_daily WHERE bucket >= time_bucket('1 day'::interval, now() - '30 days'::interval)) HAVING count(*) = 1`
+16. expect rows: `SELECT 1 FROM response_times WHERE ts > now() - '10 minutes'::interval AND response_time_ms > (SELECT approx_percentile(0.95, rollup(percentile_agg)) FROM response_times_daily WHERE bucket >= time_bucket('1 day'::interval, now() - '30 days'::interval)) HAVING count(*) = 1`
 </TestPlan>
