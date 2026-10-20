@@ -27,7 +27,14 @@ docker pull timescale/timescaledb-ha:pg18
 
 <NumberedItem title="Run the container">
 
-Replace `</a/local/data/folder>` with the path to the folder you want to keep your data in the following command.
+Create a folder to keep your data in. If the folder does not exist, Docker creates it as `root` and the container cannot write to it. Replace `</a/local/data/folder>` with the path to that folder:
+
+```bash
+mkdir -p </a/local/data/folder>
+```
+
+Then run the container:
+
 ```bash
 docker run -d --name timescaledb -p 5432:5432  -v </a/local/data/folder>:/pgdata -e PGDATA=/pgdata -e POSTGRES_PASSWORD=password timescale/timescaledb-ha:pg18
 ```
@@ -132,6 +139,14 @@ docker pull timescale/timescaledb:latest-pg18
 </NumberedItem>
 
 <NumberedItem title="Run the container">
+
+Create a folder to keep your data in. If the folder does not exist, Docker creates it as `root` and the container cannot write to it. Replace `</a/local/data/folder>` with the path to that folder:
+
+```bash
+mkdir -p </a/local/data/folder>
+```
+
+Then run the container:
 
 ```bash
 docker run -v </a/local/data/folder>:/pgdata -e PGDATA=/pgdata \
