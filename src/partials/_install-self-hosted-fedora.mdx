@@ -30,8 +30,26 @@ metadata_expire=300
 EOL
 ```
 
-<SelfHostedRedhatXPlatform />
+</NumberedItem>
+
+<NumberedItem title="Update your local repository list">
+
+```bash
+sudo dnf makecache
+```
 
 </NumberedItem>
+
+<NumberedItem title={`Install ${C.TIMESCALE_DB}`}>
+
+To avoid errors, **do not** install {C.TDB_APACHE} and {C.TDB_COMMUNITY} at the same time.
+
+```bash
+sudo yum install timescaledb-2-postgresql-18 postgresql18
+```
+
+</NumberedItem>
+
+<SelfHostedRedhatXPlatform />
 
 </NumberedList>
