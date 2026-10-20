@@ -18,7 +18,8 @@ pnpm build:local      # Alias for pnpm build
 pnpm preview          # Preview production build
 pnpm format           # Prettier formatting
 pnpm lint:prose       # Vale prose lint on changed *.md/*.mdx (pnpm lint:prose -- --all for everything)
-pnpm lint:links       # Build with link checking (CHECK_LINKS=true)
+pnpm lint:links       # Check every internal link and anchor on the live site (needs lychee: brew install lychee)
+pnpm lint:links:external  # The same plus every external link; what the nightly workflow runs
 pnpm stainless:sync   # Sync stainless/stainless.yml with stainless/openapi.yml
 ```
 
@@ -72,7 +73,7 @@ Key overrides and components in `src/components/`:
 
 Defined in `src/content.config.ts`. Extends Starlight's `docsSchema` with custom fields:
 
-- `pageLabels`: tags like `Experimental`, `Popular feature`, `Optional`.
+- `pageLabels`: pills under the title for a page-level status or origin (`Early access`, `Deprecated`, `Vendor-provided`, and so on). Facts about one element (`SinceRelease`, `CommunityBadge`) stay inline next to that element, never in `pageLabels`.
 - `overviewDescription`: dropdown descriptions.
 - `integrationSchema`: metadata for the Integrate section.
 - `learnMoreSchema`: the right-rail card (see [Custom components](#custom-components)).
@@ -134,7 +135,7 @@ Put first-party images in `src/assets/images/` and reference them with an `impor
 
 ### Links
 
-Use root-absolute internal links of the form `/section/page`, with no `.mdx` extension and no trailing slash (for example `/get-started/quickstart/create-service`). `starlight-links-validator` checks links during `pnpm lint:links`.
+Use root-absolute internal links of the form `/section/page`, with no `.mdx` extension and no trailing slash (for example `/get-started/quickstart/create-service`). Every internal link and anchor on the rendered site is checked on each preview deploy by the `link-check` workflow (`scripts/check-links.mjs` plus `lychee.toml`); `pnpm lint:links` runs the same check against production, and the `link-check-nightly` workflow adds external links on weekday mornings, tracked in a single issue labelled `link-check`. A link that redirects counts as stale: point it at the destination.
 
 ### SQL in examples
 
