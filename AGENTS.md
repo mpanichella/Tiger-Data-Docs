@@ -59,7 +59,7 @@ Key overrides and components in `src/components/`:
 - `Callout.astro`: custom styled callout, exported with other project-owned MDX components from `src/components/docs-components.ts`.
 - `Header.astro`, `Footer.astro`, `PageTitle.astro`, `PageNavigation.astro`: Starlight overrides.
 - `PageSidebar.astro` + `LearnMore.astro`: right-rail "Learn more" card driven by per-page frontmatter (`learnMore:` block). Auto-hides when absent. Full authoring guide: [`src/components/LearnMore.README.md`](./src/components/LearnMore.README.md). Prefer this over one-off "related content" patterns.
-- `NumberedList.astro` / `NumberedList.tsx` / `NumberedItem`: ordered step components for procedures.
+- `NumberedList.ts` (re-exporting `numbered-list/NumberedList.astro` and `numbered-list/NumberedItem.astro`): ordered step components for procedures. Astro, not React, on purpose: a React island strips the Expressive Code stylesheet from code blocks inside it.
 - `AuthorByline.astro`, `SinceRelease.astro`, `ChangelogEntry.astro` (plus `ChangelogFilter`/`ChangelogTag`), `Glossary/`, `IntegrateOverview.astro`, `IntegrateToc/`, `BuildToc/`, `HeaderSearchBar.astro`.
 - React `.tsx` components for interactive pieces: `CopyToClipboard`, `Prerequisites`.
 
