@@ -356,17 +356,6 @@ export default defineConfig({
           tag: "script",
           content: `(function(){function exp(){var b=document.getElementById("starlight__sidebar");if(!b)return;var a=b.querySelector('[aria-current="page"]');if(!a)return;var e=a.parentElement;while(e&&e!==b){if(e.tagName==="DETAILS")e.open=true;e=e.parentElement;}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",exp);}else{exp();}document.addEventListener("astro:page-load",exp);})();`,
         },
-        // ──── BEGIN STATSIG ────
-        // Statsig client-side SDK: session replay, web analytics, and gate exposure logging.
-        // Uses Segment's ajs_anonymous_id cookie for user identification.
-        // TO REMOVE: see README-statsig.md for full cleanup instructions.
-        // Gate: new_docs_site_rollout — https://console.statsig.com/2aVMoalsJmTVASIsy8WxBu/gates/new_docs_site_rollout
-        // Env var: PUBLIC_STATSIG_CLIENT_KEY (set in Vercel + .env.local)
-        {
-          tag: "script",
-          content: `!function(){try{var k="${import.meta.env.PUBLIC_STATSIG_CLIENT_KEY}";if(!k||k==="undefined"){console.debug("Statsig: no client key, skipping");return}var e=document.cookie.match(/ajs_anonymous_id=([^;]+)/);if(e&&e[1]){var t=document.createElement("script");t.async=!0;t.src="https://cdn.jsdelivr.net/npm/@statsig/js-client@3/build/statsig-js-client+session-replay+web-analytics.min.js";t.onload=function(){try{var s=new window.__STATSIG__.StatsigClient(k,{userID:decodeURIComponent(e[1])});s.initializeAsync().then(function(){s.checkGate("new_docs_site_rollout")})}catch(err){console.debug("Statsig init error:",err)}};document.head.appendChild(t)}}catch(err){console.debug("Statsig setup error:",err)}}();`,
-        },
-        // ──── END STATSIG ────
         // PostHog and the Twitter/X ads pixel are consent-gated (and, for PostHog,
         // read PUBLIC_POSTHOG_KEY), which requires the real Astro env var pipeline —
         // import.meta.env doesn't expose .env vars inside this config file (see git

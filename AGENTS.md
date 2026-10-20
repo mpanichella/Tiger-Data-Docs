@@ -221,5 +221,4 @@ Deeper, authoritative guides in the repo. Prefer these over re-deriving conventi
 - [`.claude/references/deprecated-compression-apis.md`](./.claude/references/deprecated-compression-apis.md): the deprecated-to-current compression API mapping.
 - `src/content/docs/get-started/contributing.mdx`: the human-facing contributor and writing-style guide.
 - [`.github/templates/template-tutorial.mdx`](./.github/templates/template-tutorial.mdx): starting-point MDX for a new tutorial (copy into a content directory). The `write-docs-tutorial` skill builds on it.
-- [`README-statsig.md`](./README-statsig.md): the Statsig analytics integration (inline script in `astro.config.ts` between the `BEGIN STATSIG`/`END STATSIG` markers, `PUBLIC_STATSIG_CLIENT_KEY` env var), and the checklist to remove it. Read this before touching the `head[]` block or analytics env vars.
 - **Changelog**: add an entry by editing `src/content/docs/get-started/news/new.mdx`, following the structure in [`README-changelog.md`](./README-changelog.md). Write product names as literal strings, not `{C.X}` constants (see [Constants system](#constants-system-critical)).
