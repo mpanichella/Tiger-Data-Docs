@@ -82,8 +82,14 @@
  *                                   plan's own steps install the database: an install-guide run, as
  *                                   the image's default user, with the page's commands verbatim.
  *                                   Absent means the pre-installed box
- *     os: ubuntu                    (with machine: bare, required) the distro: ubuntu, debian,
+ *     os: ubuntu                    (with machine: bare, required) the box's distro: ubuntu, debian,
  *                                   redhat, fedora, rocky or arch. One block per distro
+ *     path: docker-ha               (with machine: bare, optional) the tab the plan is checked
+ *                                   against when it is not the distro's own Linux tab: docker-ha,
+ *                                   docker-light or kubernetes. A block is told apart by os and path
+ *     needs: docker, psql           (with machine: bare, optional) what the guide says you need and
+ *                                   does not script; the tool installs it before step 1 and reports
+ *                                   the versions. A distro plan declares nothing, so its box stays bare
  *     fork the service              run what follows on a throwaway copy of each product: a fork of
  *                                   the standing Tiger Cloud service, and nothing extra on the
  *                                   self-hosted side, where every run is a fresh box anyway. Without
@@ -157,6 +163,12 @@
  *                                   held to the page like one
  *     skip `cmd`: reason            (bare plans only) a command the page gives that this plan does not
  *                                   run, and why: the only way to leave one out
+ *     wait up to 120s for postgres in container `timescaledb`
+ *                                   (bare plans only) the seconds a reader spends between
+ *                                   `docker run -d` and the next command; the container name must be
+ *                                   on the page. Fails with the container's log if it exits
+ *     answer `postgres=#` with `<Ctrl-D>`
+ *                                   end a psql session the page never ends
  *     exit psql                     end the psql session, so later SQL goes back through the Console
  *     replace the statement with:   swap the statement a Console editor generated for the one the
  *                                   page gives (the continuous-aggregate wizard). Multi-line as
@@ -165,6 +177,8 @@
  *   Assertions
  *     expect rows: <query>          fails when the query returns nothing
  *     expect no rows: <query>       fails when it returns anything
+ *     expect output contains `text` (bare plans only) the text is in the transcript of the
+ *                                   `run command:` above it, and the page shows it in a non-shell fence
  *     expect url /explorer          fails unless the url contains the fragment — this is what makes
  *                                   a nav step mean "it navigated", not "the label existed"
  *     expect enabled `Leave project`
