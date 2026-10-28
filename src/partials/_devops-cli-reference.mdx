@@ -226,10 +226,10 @@ You see something like:
 
 ```txt
 ┌───────────────────┬──────────────────────────────────────────┐
-│ Tiger CLI Version │ 0.25.0                                   │
-│ Build Time        │ 2026-09-21T10:28:41Z                     │
-│ Git Commit        │ 56dd79944b4afbf8d86162533ad4bd14e56ebcc8 │
-│ Go Version        │ go1.27.0                                 │
+│ Tiger CLI Version │ 0.27.0                                   │
+│ Build Time        │ 2026-10-27T14:54:58Z                     │
+│ Git Commit        │ 6109880bcd60650c76295f870a595bcf29b5545b │
+│ Go Version        │ go1.27.3                                 │
 │ Platform          │ darwin/arm64                             │
 └───────────────────┴──────────────────────────────────────────┘
 ```
@@ -252,11 +252,11 @@ tiger upgrade
 If you installed {C.CLI_LONG} with the direct install script and a newer version is available, you see:
 
 ```txt
-Upgrading Tiger CLI 0.24.0 → v0.25.0
-Downloading https://cli.tigerdata.com/releases/v0.25.0/tiger-cli_Darwin_arm64.tar.gz
+Upgrading Tiger CLI 0.26.0 → v0.27.0
+Downloading https://cli.tigerdata.com/releases/v0.27.0/tiger-cli_Darwin_arm64.tar.gz
 Verifying checksum
 Installing new binary to <install-path>/tiger
-Upgraded Tiger CLI to v0.25.0
+Upgraded Tiger CLI to v0.27.0
 ```
 
 If you installed {C.CLI_LONG} with a package manager such as Homebrew, `apt`, or `yum`/`dnf`, this command refuses to run and points you to that package manager instead.
@@ -297,9 +297,9 @@ You see something like:
 │     PROPERTY     │  VALUE  │
 ├──────────────────┼─────────┤
 │ analytics        │ true    │
+│ color            │ true    │
 │ docs_mcp         │ true    │
 │ mcp_max_rows     │ 100     │
-│ color            │ true    │
 │ output           │ table   │
 │ password_storage │ keyring │
 │ read_only        │ off     │
@@ -437,7 +437,7 @@ You see something like:
 | --- | --- |
 | `--output, -o` | Output format: `json`, `yaml`, or `table`. |
 
-With no {C.SERVICE_SHORT}s, table output prints a message to stderr, while `-o json` and `-o yaml` print an empty list (`[]`), so scripts always get structured output. Before {C.CLI_LONG} 0.27, the JSON and YAML output was empty in this case. The same applies to `service metrics series`.
+With no {C.SERVICE_SHORT}s, table output prints a message to stderr, while `-o json` and `-o yaml` print an empty list (`[]`), so scripts always get structured output. Before {C.CLI_LONG} 0.27, the JSON and YAML output was empty in this case.
 
 ### `tiger service get`
 
@@ -776,7 +776,7 @@ tiger service metrics series <name-or-id> --metric pg_stat_activity_count \
 | Flag | Description |
 | --- | --- |
 | `--metric` | The metric series to fetch. Use [`service metrics available`](#tiger-service-metrics-available) to discover valid names. |
-| `--from`, `--to` | Time window (RFC3339). Default: the last 24 hours. |
+| `--from`, `--to` | Time window (RFC3339). `--to` cannot be in the future. Default: the last 24 hours. |
 | `--bucket-seconds` | Aggregation bucket size in seconds (minimum: `60`). Defaults to `3600` (1 hour) when `--from`/`--to` are also omitted; otherwise the server picks a size matched to the window. |
 | `--fn` | Aggregation function applied per bucket: `RATE`, `INCREASE`, `SUM`, `AVG`, `MIN`, `MAX`, `MIN_TOTAL`, `MAX_TOTAL`, `COUNT`, `P50`, `P90`, `P99`, or `LAST`. Omit to let the server pick the metric's default. Not accepted on the `timescale_cloud_system_*` metrics. See [Aggregation functions](#aggregation-functions) for what each one computes. |
 | `--role` | Restrict to one instance role: `PRIMARY` or `REPLICA`. Omit to aggregate datapoints across all nodes. For most queries applying `--role PRIMARY` could be more meaningful. |
@@ -963,9 +963,12 @@ You see something like:
 ┌─────────────────────┬─────────┬────────────┬───────────────────────────────────────────────────────────────────────────────────────┐
 │        NAME         │ VERSION │   SCHEMA   │                                      DESCRIPTION                                      │
 ├─────────────────────┼─────────┼────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
-│ timescaledb_toolkit │ 1.21.0  │ public     │ Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities │
+│ pg_buffercache      │ 1.6     │ public     │ examine the shared buffer cache                                                       │
+│ pg_stat_statements  │ 1.12    │ public     │ track planning and execution statistics of all SQL statements executed                │
 │ plpgsql             │ 1.0     │ pg_catalog │ PL/pgSQL procedural language                                                          │
-│ timescaledb         │ 2.21.0  │ public     │ Enables scalable inserts and complex queries for time-series data                     │
+│ postgres_fdw        │ 1.2     │ public     │ foreign-data wrapper for remote PostgreSQL servers                                    │
+│ timescaledb         │ 2.31.0  │ public     │ Enables scalable inserts and complex queries for time-series data (Community Edition) │
+│ timescaledb_toolkit │ 1.26.0  │ public     │ Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities │
 └─────────────────────┴─────────┴────────────┴───────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1041,7 +1044,7 @@ Install and manage {C.MCP_LONG}, the tool your AI agent uses to work with {C.CLO
 
 ### `tiger mcp install`
 
-Install and configure {C.MCP_LONG} for an AI agent. Supported clients: `claude-code`, `codex`, `copilot`, `cursor`, `devin`, `gemini`, `vscode`, `windsurf`, `antigravity`, `kiro-cli`. If no client is given, you are prompted to choose. Alias: `add`.
+Install and configure {C.MCP_LONG} for an AI agent. Supported clients: `claude-code`, `codex`, `copilot`, `cursor`, `devin`, `gemini`, `vscode`, `antigravity`, `kiro-cli`. If no client is given, you are prompted to choose. Alias: `add`.
 
 The `copilot` client configures the GitHub Copilot CLI, and the GitHub Copilot desktop app picks up the same configuration. The `antigravity` client writes to `~/.gemini/config/`, which Antigravity 2.0, the Antigravity IDE, and the Antigravity CLI all read. Before {C.CLI_LONG} 0.27, it wrote to `~/.gemini/antigravity/mcp_config.json`, which only the IDE reads.
 
@@ -1084,10 +1087,13 @@ You see something like:
 │ prompt │ postgres                               │
 │ prompt │ postgres-database-migration            │
 │ prompt │ postgres-hybrid-text-search            │
+│ prompt │ schema-exploration                     │
 │ prompt │ setup-timescaledb-hypertables          │
+│ prompt │ timescaledb-hyperfunctions             │
 │ tool   │ db_extensions_list                     │
 │ tool   │ db_query                               │
 │ tool   │ db_schema                              │
+│ tool   │ feedback                               │
 │ tool   │ search_docs                            │
 │ tool   │ service_create                         │
 │ tool   │ service_delete                         │
@@ -1199,8 +1205,8 @@ Installed 11 skills:
   ...
 
 Installed to:
-  ~/.agents/skills
-  ~/.claude/skills
+  /Users/<user>/.agents/skills
+  /Users/<user>/.claude/skills
 
 Restart your coding agents to load the new skills.
 ```
