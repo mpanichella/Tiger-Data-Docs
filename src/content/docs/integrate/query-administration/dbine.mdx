@@ -51,7 +51,7 @@ To connect to {C.CLOUD_LONG}:
   </NumberedItem>
   <NumberedItem title="Configure the connection">
 
-    Fill in the connection name and use your [connection details](/integrate/find-connection-details) for the server, port, database, user, and password. If your service requires TLS, open the `SSL/TLS` tab and select `Encrypt the connection (TLS)`.
+    Fill in the connection name and use your [connection details](/integrate/find-connection-details) for the server, port, database, user, and password. New connections verify the server's certificate by default: the `SSL/TLS` tab sets `sslmode` to `verify-full`, which works with {C.CLOUD_LONG} as is.
 
   </NumberedItem>
   <NumberedItem title="Click `Test connection`, then `Save and connect`">
@@ -81,10 +81,11 @@ You have successfully integrated DBine with {C.CLOUD_LONG}.
     SELECT time_bucket('1 day', c.time) AS day,
            d.site,
            round(avg(c.temperature)::numeric, 2) AS avg_temp,
-           round(max(c.temperature)::numeric, 2) AS max_temp
+           round(max(c.temperature)::numeric, 2) AS max_temp,
+           round(avg(c.humidity)::numeric, 1) AS avg_humidity
     FROM conditions c
     JOIN devices d USING (device_id)
-    WHERE c.time >= now() - interval '3 days'
+    WHERE c.time >= '2026-10-17'
     GROUP BY day, d.site
     ORDER BY day, d.site;
     ```
